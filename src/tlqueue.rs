@@ -2,6 +2,7 @@ use std::ptr;
 use std::sync::{Mutex};
 use std::iter::FromIterator;
 
+
 struct Node<T> {
     value: Option<T>,
     next: *mut Node<T>
@@ -13,6 +14,8 @@ pub struct Queue<T> {
 }
 
 impl<T> Node<T> {
+    /// Create a new Node<T> struct.
+    /// This is only used internally by the Queue functions.
     fn new(v: Option<T>) -> *mut Node<T> {
         Box::into_raw(Box::new(Node {
             next: ptr::null_mut(),
@@ -25,7 +28,16 @@ unsafe impl<T> Sync for Queue<T> {}
 unsafe impl<T> Send for Queue<T> {}
 
 impl<T> Queue<T> {
-    fn new() -> Queue<T> {
+    /// Create a new scottqueue::tlqueue::Queue<T> struct
+    /// Starts out empty, with a single Node containing `None`
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scottqueue::tlqueue::Queue;
+    /// let q: Queue<i64> = Queue::new();
+    /// ```
+    pub fn new() -> Queue<T> {
         let null_node : *mut Node<T> = Node::new(None);
         Queue {
             head: Mutex::new(null_node),
@@ -33,7 +45,18 @@ impl<T> Queue<T> {
         }
     }
 
-    fn push(&self, value : T) {
+    /// Push a value into the Queue.
+    /// Internally this creates a new Node<T> and sets its value
+    /// to the given value.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use scottqueue::tlqueue::Queue;
+    /// let q: Queue<i64> = Queue::new();
+    /// q.push(12);
+    /// ```
+    pub fn push(&self, value : T) {
         let new_node : *mut Node<T> = Node::new(Some(value));
         let mut tail = self.tail.lock().unwrap();
         unsafe {
@@ -42,7 +65,19 @@ impl<T> Queue<T> {
         }
     }
 
-    fn pop(&self) -> Option<T> {
+    /// pop a value from the Queue.
+    /// Internally this grabs the head of the queue, and returns the value.
+    /// It then removes that node and sets the head to the next node.
+    ///
+    ///  Examples
+    ///
+    /// ```
+    /// use scottqueue::tlqueue::Queue;
+    /// let q: Queue<i64> = Queue::new();
+    /// q.push(12);
+    /// println!("Result!: {}", q.pop().unwrap());
+    /// ```
+    pub fn pop(&self) -> Option<T> {
         let mut head = self.head.lock().unwrap();
         unsafe {
             if (**head).next.is_null() { // is queue empty?
@@ -55,6 +90,7 @@ impl<T> Queue<T> {
         }
     }
 }
+
 impl<T> Iterator for Queue<T> {
     type Item = T;
 
@@ -75,10 +111,13 @@ impl<A> FromIterator<A> for Queue<A> {
 
 #[cfg(test)]
 mod tests {
+    extern crate test;
+
     use std::sync::mpsc::channel;
     use std::sync::Arc;
     use std::collections::HashSet;
     use std::thread;
+    use self::test::Bencher;
 
     #[test]
     fn test_queue() {
@@ -146,5 +185,20 @@ mod tests {
             end_set.insert(rx.recv().unwrap());
         }
         assert_eq!(end_set, start_set);
+    }
+
+    #[bench]
+    fn push_bench(b: &mut Bencher) {
+        let q = super::Queue::new();
+        b.iter(|| q.push(0));
+    }
+
+    #[bench]
+    fn pop_bench(b: &mut Bencher) {
+        let q = super::Queue::new();
+        for i in 0..10000 {
+            q.push(i);
+        }
+        b.iter(|| q.pop());
     }
 }
