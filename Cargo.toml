@@ -1,7 +1,13 @@
 [package]
 name = "scottqueue"
 version = "0.1.0"
-authors = ["Ross Delinger <rossdylan@csh.rit.edu>"]
+authors = ["Ross Delinger <rossdylan@fastmail.com>"]
+description = """
+Provides multi-producer, multi-consumer queues based on the ones in the paper
+by Michael and Scott.
+"""
+repository = "https://github.com/rossdylan/rust-scottqueue"
+license = "MIT"
 
 [profile.dev]
 opt-level = 0
