@@ -120,6 +120,13 @@ mod tests {
     use self::test::Bencher;
 
     #[test]
+    fn test_single_item() {
+        let q: super::Queue<i64> = super::Queue::new();
+        q.push(1);
+        assert_eq!(q.pop().unwrap(), 1);
+    }
+
+    #[test]
     fn test_queue() {
         let values = &vec![1, 2, 3, 4, 5];
         let q: super::Queue<i64> = super::Queue::new();
@@ -129,9 +136,6 @@ mod tests {
         let mut results: Vec<i64> = vec![];
         for _ in 0..5 { 
             results.push(q.pop().unwrap());
-        }
-        for res in &results {
-            println!("Result: {}", res);
         }
         assert_eq!(&results, values);
     }
@@ -144,9 +148,6 @@ mod tests {
             q.push(*value);
         }
         let results : Vec<i64> = q.collect();
-        for res in &results {
-            println!("Result: {}", res);
-        }
         assert_eq!(&results, values);
     }
 
@@ -160,9 +161,15 @@ mod tests {
 
     #[test]
     fn test_threads() {
+        for _ in 0..100 {
+            _test_threads();
+        }
+    }
+
+    fn _test_threads() {
         let (tx, rx) = channel();
-        let nthreads = 8;
-        let nmsgs = 5000;
+        let nthreads = 20;
+        let nmsgs = 10000;
 
         let q = Arc::new(super::Queue::new());
         let mut start_set = HashSet::new();
@@ -175,14 +182,17 @@ mod tests {
             let tx = tx.clone();
             let q = q.clone();
             thread::spawn(move|| {
-                for _ in 0..(nmsgs/8) {
+                for _ in 0..(nmsgs/nthreads) {
                     tx.send(q.pop().unwrap()).unwrap();
                 }
                 drop(tx);
             });
         }
-        for _ in 0..nmsgs {
-            end_set.insert(rx.recv().unwrap());
+        for i in 0..nmsgs {
+            let msg = rx.recv().unwrap();
+            assert!(!end_set.contains(&msg));
+            end_set.insert(msg);
+
         }
         assert_eq!(end_set, start_set);
     }

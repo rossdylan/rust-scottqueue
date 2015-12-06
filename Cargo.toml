@@ -3,4 +3,20 @@ name = "scottqueue"
 version = "0.1.0"
 authors = ["Ross Delinger <rossdylan@csh.rit.edu>"]
 
+[profile.dev]
+opt-level = 0
+debug = true
+rpath = false
+lto = false
+debug-assertions = true
+codegen-units = 1
+
+[profile.test]
+opt-level = 0
+debug = true
+rpath = false
+lto = false
+debug-assertions = true
+codegen-units = 1
+
 [dependencies]
